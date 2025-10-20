@@ -1,6 +1,6 @@
 # Modern Activity Tracker
 
-![image](https://user-images.githubusercontent.com/7231077/189859116-fb2f6fff-378b-4aaf-8fd0-6481dd5bb2c4.png)
-
 Run setup.py file
 To be continued.
+
+<img width="293" height="523" alt="image_2025-10-20_11-03-45" src="https://github.com/user-attachments/assets/d44da0a8-8c50-4863-93e8-db08208c8311" />
