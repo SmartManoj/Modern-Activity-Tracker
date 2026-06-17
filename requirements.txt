@@ -6,4 +6,6 @@ fastapi
 uvicorn
 git+https://github.com/rytilahti/python-miio.git
 telethon
+TelethonFakeTLS
+PySocks
 python-dotenv

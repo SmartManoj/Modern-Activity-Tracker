@@ -16,7 +16,38 @@ from dotenv import load_dotenv
 load_dotenv()
 
 account = 'telethon_session'
-app = TelegramClient(account, os.getenv('API_ID'), os.getenv('API_HASH'))
+
+def _load_proxy():
+    """Return (connection, proxy) for a fake-TLS MTProto proxy, or (None, None).
+
+    Used when the network blocks Telegram directly. Source: TG_PROXY env var
+    in the form 'server:port:secret', else working_proxy.txt. The secret may
+    keep its leading 'ee' (hex) or '7' (base64) marker; it is stripped here as
+    required by TelethonFakeTLS.
+    """
+    val = os.getenv('TG_PROXY')
+    if not val and os.path.exists('working_proxy.txt'):
+        with open('working_proxy.txt') as f:
+            val = f.read().strip()
+    if not val:
+        return None, None
+    try:
+        server, port, secret = val.split(':')
+    except ValueError:
+        return None, None
+    if secret.startswith('ee'):
+        secret = secret[2:]
+    elif secret.startswith('7'):
+        secret = secret[1:]
+    import TelethonFakeTLS
+    return TelethonFakeTLS.ConnectionTcpMTProxyFakeTLS, (server, int(port), secret)
+
+_conn, _proxy = _load_proxy()
+if _proxy:
+    app = TelegramClient(account, os.getenv('API_ID'), os.getenv('API_HASH'),
+                         connection=_conn, proxy=_proxy)
+else:
+    app = TelegramClient(account, os.getenv('API_ID'), os.getenv('API_HASH'))
 
 # Initialize the client properly
 async def init_client():
