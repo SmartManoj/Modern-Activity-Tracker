@@ -30,8 +30,8 @@ def resolve_ip():
     ip_address = get_ip_address(mac)
     if not ip_address:
         print(ip_addresses)
-        for i in range(3,15):
-            new_ip = f'192.168.1.{i}'
+        for i in range(118,120):
+            new_ip = f'192.168.31.{i}'
             print(new_ip)
             if new_ip not in ip_addresses:
                 ping_result = subprocess.run(['ping', '-c', '1', new_ip], capture_output=True, text=True)

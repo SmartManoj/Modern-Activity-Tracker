@@ -23,5 +23,9 @@ def set_mute(state: bool):  # True = mute, False = unmute
     volume = cast(interface, POINTER(IAudioEndpointVolume))
     volume.SetMute(state, None)
 
+
+
+
 if __name__ == "__main__":
     monitor_off()
+

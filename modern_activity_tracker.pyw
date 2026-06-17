@@ -1,3 +1,4 @@
+import threading
 from telethon import TelegramClient, events
 from telethon.tl.functions.account import UpdateProfileRequest
 from telethon.tl.functions.account import UpdateEmojiStatusRequest
@@ -9,6 +10,7 @@ from tkinter import *
 import os
 import asyncio
 from hc import toggle_fan
+from notify import notify_after_eat
 from sys_utils import set_mute, monitor_off
 from dotenv import load_dotenv
 load_dotenv()
@@ -91,8 +93,19 @@ def enter_custom_activity():
     for k,i in enumerate(options):
         text += f'{k+1}. {i}\n'
     # get option number
-    option = int(prompt(text=text, title='Custom activity', default='1'))
-    return options[option-1]
+    try:
+        i = prompt(text=text, title='Custom activity', default='1')
+        if i.isdigit():
+            option = int(i)
+            return options[option-1]
+        else:
+            return i
+    except Exception as e:
+        alert('MAT'+str(e))
+        with open('logs.txt', 'a') as file:
+            e=traceback.format_exc()
+            print(e, file=file)
+        return None
 
 async def update_telegram_profile(new_bio, custom_emoji_id):
     try:
@@ -118,16 +131,20 @@ def set_activity(index):
         if current_activity == 'fan':
             toggle_fan()
             return
-        if current_activity == 'screen':
+        if current_activity == 'screen' and 1:
             monitor_off()
             return
+        if last_activity == 'eat' and 0:
+            # run in new thread
+            threading.Thread(target=notify_after_eat).start()
         if current_activity == 'custom':
             current_activity = enter_custom_activity()
         timestamp = datetime.now()
         work_activities = ['work', 'meeting']
         if current_activity in work_activities or last_activity in work_activities:
             try:
-                toggle_fan()
+                # toggle_fan()
+                pass
             except Exception as e:
                 with open('logs.txt', 'a') as file:
                     e=traceback.format_exc()
@@ -135,10 +152,10 @@ def set_activity(index):
 
         dnd_activities = ['eat','sleep', 'do yoga', ]
         if current_activity in dnd_activities:
-            if current_activity == 'sleep' and 0:
+            if current_activity == 'sleep' and 1:
                 with open('logs.txt', 'a') as log:
                     log.write(f'{datetime.now()}: About to call monitor_off() for {current_activity}\n')
-                monitor_off()
+                # monitor_off()
             with open('logs.txt', 'a') as log:
                 log.write(f'{datetime.now()}: monitor_off() completed for {current_activity}\n')
             with open('logs.txt', 'a') as log:
@@ -173,6 +190,7 @@ def set_activity(index):
             'walk': 5420631872994553493, # 🚶
             'work': 5319161050128459957, # 👨‍💻
             'meeting': 5453957997418004470, # 👥
+            'play': 5251537923924306335, # 👀
         }
         custom_emoji_id = custom_emojis.get(current_activity)
         
