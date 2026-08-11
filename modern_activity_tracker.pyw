@@ -165,7 +165,7 @@ def set_activity(index):
         if current_activity == 'screen' and 1:
             monitor_off()
             return
-        if last_activity == 'eat' and 0:
+        if last_activity == 'eat' and 1:
             # run in new thread
             threading.Thread(target=notify_after_eat).start()
         if current_activity == 'custom':

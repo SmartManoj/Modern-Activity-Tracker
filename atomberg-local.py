@@ -2,11 +2,11 @@
 import json
 import socket 
 
-TARGET_IP = '192.168.1.16'
+TARGET_IP = '192.168.31.55'
 TARGET_PORT = 5600
 
 # JSON command to send
-command = {"power":0}
+command = {"power": 1}
 
 # Convert to JSON string and encode to bytes
 message = json.dumps(command).encode('utf-8')
