@@ -13,3 +13,4 @@ me.session-shm
 telethon_session.session
 telethon_session.session-journal
 /venv
+test.py

@@ -174,7 +174,7 @@ def set_activity(index):
         work_activities = ['work', 'meeting']
         if current_activity in work_activities or last_activity in work_activities:
             try:
-                # toggle_fan()
+                toggle_fan()
                 pass
             except Exception as e:
                 with open('logs.txt', 'a') as file:

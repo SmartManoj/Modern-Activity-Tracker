@@ -2,9 +2,18 @@ from datetime import datetime
 import os,subprocess
 from time import sleep
 from dotenv import load_dotenv
+from atomberg_local import control_fan
 load_dotenv()
+last_fan_state = 0
+def toggle_fan(power=None):
+    # ceiling fan
+    global last_fan_state
+    last_fan_state = not last_fan_state
+    control_fan(not last_fan_state)
+    
+    return 'Fan toggled'
 
-def toggle_fan():
+def toggle_standing_fan():
     for i in range(5):
         
         cmd = os.getenv('FAN_CMD')
