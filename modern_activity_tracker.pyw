@@ -1,67 +1,45 @@
 import threading
-from telethon import TelegramClient, events
-from telethon.tl.functions.account import UpdateProfileRequest
-from telethon.tl.functions.account import UpdateEmojiStatusRequest
-from telethon.tl.types import EmojiStatus
+from pyrogram import Client, raw
 import traceback
 from pymsgbox import alert, prompt
 from datetime import *
 from tkinter import *
 import os
-import asyncio
 from hc import toggle_fan
 from notify import notify_after_eat
 from sys_utils import set_mute, monitor_off
 from dotenv import load_dotenv
 load_dotenv()
 
-account = 'telethon_session'
+account = 'kurigram_session'
 
 def _load_proxy():
-    """Return (connection, proxy) for a fake-TLS MTProto proxy, or (None, None).
+    """Return a fake-TLS MTProto proxy dict for Kurigram, or None.
 
     Used when the network blocks Telegram directly. Source: TG_PROXY env var
-    in the form 'server:port:secret', else working_proxy.txt. The secret may
-    keep its leading 'ee' (hex) or '7' (base64) marker; it is stripped here as
-    required by TelethonFakeTLS.
+    in the form 'server:port:secret', else working_proxy.txt. Kurigram reads
+    the secret as-is (hex or base64, with its 'ee' marker).
     """
     val = os.getenv('TG_PROXY')
     if not val and os.path.exists('working_proxy.txt'):
         with open('working_proxy.txt') as f:
             val = f.read().strip()
     if not val:
-        return None, None
+        return None
     try:
         server, port, secret = val.split(':')
     except ValueError:
-        return None, None
-    if secret.startswith('ee'):
-        secret = secret[2:]
-    elif secret.startswith('7'):
-        secret = secret[1:]
-    import TelethonFakeTLS
-    return TelethonFakeTLS.ConnectionTcpMTProxyFakeTLS, (server, int(port), secret)
+        return None
+    return dict(scheme='mtproxy', hostname=server, port=int(port), secret=secret)
 
-_conn, _proxy = _load_proxy()
-if _proxy:
-    app = TelegramClient(account, os.getenv('API_ID'), os.getenv('API_HASH'),
-                         connection=_conn, proxy=_proxy)
-else:
-    app = TelegramClient(account, os.getenv('API_ID'), os.getenv('API_HASH'))
-
-# Initialize the client properly
-async def init_client():
-    await app.start()
-
-# Run the async initialization
-loop = asyncio.new_event_loop()
-asyncio.set_event_loop(loop)
-loop.run_until_complete(init_client())
+app = Client(account, api_id=os.getenv('API_ID'), api_hash=os.getenv('API_HASH'),
+             proxy=_load_proxy(), no_updates=True)
+app.start()
 
 # save bio to file for later use
-async def fetch_bio():
-    chat = await app.get_entity('@' + username)
-    current_bio = chat.about.split('|')[-1].strip()
+def fetch_bio():
+    chat = app.get_chat('@' + username)
+    current_bio = (chat.bio or '').split('|')[-1].strip()
     with open('bio.txt', 'w') as file:
         file.write(current_bio)
     return current_bio
@@ -71,12 +49,7 @@ if os.path.exists('username.txt'):
     with open('username.txt', 'r') as file:
         username = file.read()
 else:
-    # Get username asynchronously
-    async def get_username():
-        me = await app.get_me()
-        return me.username
-    
-    username = asyncio.run(get_username())
+    username = app.get_me().username
     with open('username.txt', 'w') as file:
         file.write(username)
 
@@ -85,7 +58,7 @@ if os.path.exists('bio.txt'):
     with open('bio.txt', 'r') as file:
         current_bio = file.read()
 else:
-    current_bio = asyncio.run(fetch_bio())
+    current_bio = fetch_bio()
 
 # choices Eating, Sleeping, Yoga, Bathing, Sun bathing
 # tkinter button for choosing the activity
@@ -138,13 +111,14 @@ def enter_custom_activity():
             print(e, file=file)
         return None
 
-async def update_telegram_profile(new_bio, custom_emoji_id):
+def update_telegram_profile(new_bio, custom_emoji_id):
     try:
         with open('logs.txt', 'a') as file:
             file.write(f'{datetime.now()}: About to update profile with bio: {new_bio}\n')
-        await app(UpdateProfileRequest(about=new_bio))
+        app.update_profile(bio=new_bio)
         if custom_emoji_id:
-            await app(UpdateEmojiStatusRequest(EmojiStatus(document_id=custom_emoji_id)))
+            app.invoke(raw.functions.account.UpdateEmojiStatus(
+                emoji_status=raw.types.EmojiStatus(document_id=custom_emoji_id)))
     except Exception as e:
         alert('MAT'+str(e))
         with open('logs.txt', 'a') as file:
@@ -172,7 +146,8 @@ def set_activity(index):
             current_activity = enter_custom_activity()
         timestamp = datetime.now()
         work_activities = ['work', 'meeting']
-        if current_activity in work_activities or last_activity in work_activities:
+        # toggle only when entering or leaving the work group, not when switching within it (e.g. work -> meeting)
+        if (current_activity in work_activities) != (last_activity in work_activities):
             try:
                 toggle_fan()
                 pass
@@ -225,9 +200,8 @@ def set_activity(index):
         }
         custom_emoji_id = custom_emojis.get(current_activity)
         
-        # Run the async update in a new event loop
         try:
-            loop.run_until_complete(update_telegram_profile(new_bio, custom_emoji_id))
+            update_telegram_profile(new_bio, custom_emoji_id)
         except Exception as e:
             alert('MAT'+str(e))
             with open('logs.txt', 'a') as file:

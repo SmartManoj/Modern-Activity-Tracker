@@ -14,3 +14,5 @@ telethon_session.session
 telethon_session.session-journal
 /venv
 test.py
+kurigram_session.session
+kurigram_session.session-journal
